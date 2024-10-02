@@ -15,3 +15,10 @@ class ProductViewTest(TestCase):
             "name": "1 name"
         }
         self.assertJSONEqual(response.content, expected_data)
+
+    def test_get_non_existent_product(self):
+        # Тестуємо ендпоінт для productId = 999, який не існує
+        response = self.client.get(reverse('product_detail', args=[999]))
+        
+        # Перевіряємо, що статус код відповіді 404
+        self.assertEqual(response.status_code, 404)
