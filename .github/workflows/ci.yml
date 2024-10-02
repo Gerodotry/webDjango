@@ -26,18 +26,11 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest --html=report.html  # Генерує звіт у форматі HTML
-          python manage.py test products
+          mkdir -p reports  # Створюємо каталог для звітів
+          python -m pytest --html=reports/report.html  # Генеруємо звіт у каталозі reports
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
         with:
           name: test-report
-          path: report.html  # Завантаження звіту
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: /my_project # Вкажіть шлях до звіту
+          path: reports/report.html  # Завантаження звіту
