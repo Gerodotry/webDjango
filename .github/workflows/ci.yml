@@ -1,36 +1,64 @@
-name: CI
+name: Django Tests
 
 on:
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd "pg_isready"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+        volumes:
+          - ./data:/var/lib/postgresql/data
 
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
-          python-version: '3.11'
+          python-version: '3.10'  # або інша версія, яку ви використовуєте
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Set up PostgreSQL for Django
         run: |
-          mkdir -p reports  # Створюємо каталог для звітів
-          python -m pytest --html=reports/report.html  # Генеруємо звіт у каталозі reports
+          sudo apt-get install postgresql-client
+          export PGPASSWORD=postgres
+          psql -h localhost -U postgres -c "CREATE DATABASE test_db;"
 
-      - name: Upload test report
-        uses: actions/upload-artifact@v4
+      - name: Run migrations
+        run: python manage.py migrate
+
+      - name: Run tests and generate report
+        run: |
+          mkdir -p test-reports
+          python manage.py test --verbosity=2 --no-input --parallel --keepdb --junit-xml=test-reports/test-results.xml
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
         with:
-          name: test-report
-          path: reports/report.html  # Завантаження звіту
+          name: test-results
+          path: test-reports/test-results.xml
