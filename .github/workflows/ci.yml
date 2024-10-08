@@ -1,64 +1,52 @@
-name: Django Tests
+name: Django CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:12
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd "pg_isready"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-        volumes:
-          - ./data:/var/lib/postgresql/data
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.11]
 
     steps:
-      - name: Check out the code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        clean: true  # Додаємо цю опцію для очищення
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10'  # або інша версія, яку ви використовуєте
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Set up PostgreSQL for Django
-        run: |
-          sudo apt-get install postgresql-client
-          export PGPASSWORD=postgres
-          psql -h localhost -U postgres -c "CREATE DATABASE test_db;"
+    - name: Run Tests
+      run: |
+        mkdir -p test-reports
+        python manage.py test --verbosity=2 --no-input --parallel --keepdb --junit-xml=test-reports/test-results.xml
 
-      - name: Run migrations
-        run: python manage.py migrate
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: test-reports/test-results.xml
 
-      - name: Run tests and generate report
-        run: |
-          mkdir -p test-reports
-          python manage.py test --verbosity=2 --no-input --parallel --keepdb --junit-xml=test-reports/test-results.xml
+    - name: Create Artifact
+      run: |
+        zip -r my_project_artifact.zip .  # Створюємо zip-архів з усіма файлами проекту
 
-      - name: Upload test reports
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: test-reports/test-results.xml
+    - name: Upload Project Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: my_project_artifact
+        path: my_project_artifact.zip
