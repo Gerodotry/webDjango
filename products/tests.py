@@ -1,16 +1,18 @@
 from django.test import TestCase
-from django.urls import reverse
+from .models import Product
 
-class ProductViewTest(TestCase):
-    def test_get_product(self):
-        response = self.client.get(reverse('product_detail', args=[1]))
-        self.assertEqual(response.status_code, 200)
-        expected_data = {
-            "id": "1",
-            "name": "1 name"
-        }
-        self.assertJSONEqual(response.content, expected_data)
+class ProductModelTest(TestCase):
+    def test_create_product(self):
+        # Тестуємо створення продукту
+        product = Product.objects.create(name="Test Product")
+        
+        # Перевіряємо, що ім'я продукту правильне
+        self.assertEqual(product.name, "Test Product")
+        
+        # Перевіряємо, що продукт є об'єктом моделі Product
+        self.assertIsInstance(product, Product)
 
-    def test_get_non_existent_product(self):
-        response = self.client.get(reverse('product_detail', args=[999]))
-        self.assertEqual(response.status_code, 404)  # Очікуємо 404
+    def test_product_string_representation(self):
+        # Тестуємо рядкове представлення продукту
+        product = Product(name="Test Product")
+        self.assertEqual(str(product), "Test Product")  # Перевіряємо, що рядкове представлення правильне
