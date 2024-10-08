@@ -18,7 +18,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        clean: true  # Додаємо цю опцію для очищення
+        clean: true
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -33,7 +33,7 @@ jobs:
     - name: Run Tests
       run: |
         mkdir -p test-reports
-        python manage.py test --verbosity=2 --no-input --parallel --keepdb --junit-xml=test-reports/test-results.xml
+        python manage.py test --verbosity=2 --no-input --parallel --keepdb  # або використовуйте pytest
 
     - name: Upload Test Report
       uses: actions/upload-artifact@v3
@@ -43,7 +43,7 @@ jobs:
 
     - name: Create Artifact
       run: |
-        zip -r my_project_artifact.zip .  # Створюємо zip-архів з усіма файлами проекту
+        zip -r my_project_artifact.zip .
 
     - name: Upload Project Artifact
       uses: actions/upload-artifact@v3
